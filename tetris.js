@@ -5,6 +5,7 @@ var row = 20
 var col = 10
 var sq = 30
 var vacant = 'white'
+var scoreBoard = document.getElementById('score')
 
 // Draw Square
 function drawSquare (x, y, color) {
@@ -48,9 +49,13 @@ var pieces = [
   [J, 'orange']
 ]
 
-// Initiate a Piece
+// Randomly Generate a Piece
+function randomPiece () {
+  var r = randomN = Math.floor(Math.random() * pieces.length)
+  return new Piece( pieces[r][0], pieces[r][1] )
+}
 
-var p = new Piece( pieces[0][0], pieces[0][1] )
+var p = randomPiece()
 
 // The Object Piece
 function Piece (tetramino, color) {
@@ -95,7 +100,8 @@ Piece.prototype.moveDown = function () {
     this.y += 1
     this.draw()
   } else {
-    // lock piece and generate new piece
+    this.lock()
+    p = randomPiece()
   }
 }
 
@@ -144,6 +150,51 @@ Piece.prototype.rotate = function () {
   }
 }
 
+// Locking
+var score = 0
+
+Piece.prototype.lock = function () {
+  for (var r = 0; r < this.activeTetramino.length; r += 1) {
+    for (var c = 0; c < this.activeTetramino.length; c += 1) {
+      // skip the vacant squares
+      if (!this.activeTetramino[r][c]) {
+        continue
+      }
+      if (this.y + r <= 0) {
+        alert("Game Over")
+        gameOver = true
+        break
+      }
+      board[this.y + r][this.x + c] = this.color
+    }
+  }
+
+  // remove full rows
+  for (let r = 0; r < row; r += 1 ) {
+    let isRowFull = true
+    for (let c = 0; c < col; c += 1) {
+      isRowFull = isRowFull && (board[r][c] != vacant)
+    }
+    if (isRowFull) {
+      // if row is full, move rows above it down
+      for (let y = r; y > 1; y -= 1 ) {
+        for (let c = 0; c < col; c += 1) {
+          board[y][c] = board[y - 1][c]
+        }
+      }
+      // top row has no row above it
+      for (let c = 0; c < col; c += 1) {
+        board[0][c] = vacant
+      }
+      // increment the score
+      score += 10
+    }
+  }
+  // update the board
+  drawBoard()
+  scoreBoard.innerHTML = score
+}
+
 // Collision Detection
 Piece.prototype.collision = function (x, y, piece) {
   for (var r = 0; r < piece.length; r += 1) {
@@ -189,6 +240,7 @@ function control (event) {
 
 // Drop Every Second
 var dropStart = Date.now()
+var gameOver = false
 
 function drop () {
   var now = Date.now()
@@ -197,7 +249,7 @@ function drop () {
     p.moveDown()
     dropStart = Date.now()
   }
-  requestAnimationFrame(drop)
+  if (!gameOver) requestAnimationFrame(drop)
 }
 
 drop()
